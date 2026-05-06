@@ -1,8 +1,8 @@
 "use client"
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Upload, Package, DollarSign, Tag, CheckCircle2, Lock, Eye, EyeOff } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Upload, Package, DollarSign, Tag, CheckCircle2, Lock, Eye, EyeOff, LogOut } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function AdminPanel() {
   // Estados para Seguridad
@@ -13,10 +13,10 @@ export default function AdminPanel() {
   // Estados para el Formulario
   const [loading, setLoading] = useState(false)
   const [mensaje, setMensaje] = useState('')
-  const [form, setForm] = useState({ nombre: '', precio: '', categoria: 'Lencería' })
+  const [form, setForm] = useState({ nombre: '', precio: '', categoria: 'lenceria' })
   const [file, setFile] = useState<File | null>(null)
 
-  // CAMBIA TU CONTRASEÑA AQUÍ
+  // CONTRASEÑA MAESTRA
   const PASSWORD_CORRECTA = "admin123"
 
   const handleLogin = (e: React.FormEvent) => {
@@ -24,7 +24,7 @@ export default function AdminPanel() {
     if (password === PASSWORD_CORRECTA) {
       setAuthorized(true)
     } else {
-      alert("Contraseña incorrecta")
+      alert("Acceso Denegado: Credencial Incorrecta")
     }
   }
 
@@ -34,77 +34,74 @@ export default function AdminPanel() {
     setMensaje('')
 
     try {
-      if (!file) throw new Error('Debes seleccionar una imagen')
+      if (!file) throw new Error('Se requiere una imagen para el catálogo')
 
-      // 1. Subir la imagen a Supabase Storage
       const fileExt = file.name.split('.').pop()
       const fileName = `${Math.random()}.${fileExt}`
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('productos')
         .upload(fileName, file)
 
       if (uploadError) throw uploadError
 
-      // 2. Obtener la URL pública
       const { data: urlData } = supabase.storage.from('productos').getPublicUrl(fileName)
       const imagenUrl = urlData.publicUrl
 
-      // 3. Guardar en la tabla productos
       const { error: insertError } = await supabase
         .from('productos')
         .insert([{
           nombre: form.nombre,
           precio: parseFloat(form.precio),
-          categoria: form.categoria,
+          categoria: form.categoria.toLowerCase(),
           imagen_url: imagenUrl
         }])
 
       if (insertError) throw insertError
 
-      setMensaje('¡Producto guardado con éxito!')
-      setForm({ nombre: '', precio: '', categoria: 'Lencería' })
+      setMensaje('¡Producto añadido a la colección con éxito!')
+      setForm({ nombre: '', precio: '', categoria: 'lenceria' })
       setFile(null)
     } catch (error: any) {
-      setMensaje('Error: ' + error.message)
+      setMensaje('Error en el sistema: ' + error.message)
     } finally {
       setLoading(false)
     }
   }
 
-  // PANTALLA DE LOGIN (Si no ha puesto la contraseña)
+  // VISTA DE ACCESO (LOGIN)
   if (!authorized) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#001A33] flex items-center justify-center px-4">
         <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full p-8 border border-gray-100 rounded-[2.5rem] shadow-2xl shadow-rose-100 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full p-10 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] text-center border-t-4 border-[#D4AF37]"
         >
-          <div className="bg-rose-500 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-rose-200">
-            <Lock className="text-white w-8 h-8" />
+          <div className="bg-[#001A33] w-20 h-20 flex items-center justify-center mx-auto mb-8 shadow-xl">
+            <Lock className="text-[#D4AF37] w-10 h-10" />
           </div>
-          <h1 className="text-2xl font-black italic tracking-tighter text-black uppercase">Acceso Privado</h1>
-          <p className="text-gray-400 text-[10px] tracking-[0.2em] font-bold mt-2 mb-8">INVERSIONES J Y D</p>
+          <h1 className="text-3xl font-serif italic text-[#001A33] mb-2">Acceso Exclusivo</h1>
+          <p className="text-[#D4AF37] text-[9px] tracking-[0.4em] font-black uppercase mb-10">Admin • J y D</p>
           
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-6">
             <div className="relative">
               <input 
                 type={showPass ? "text" : "password"} 
-                className="w-full bg-gray-50 border-none rounded-2xl py-4 px-6 text-black outline-none focus:ring-2 focus:ring-rose-500 transition-all"
-                placeholder="Ingresa la clave maestra"
+                className="w-full bg-gray-50 border-b border-gray-200 py-4 px-2 text-[#001A33] outline-none focus:border-[#D4AF37] transition-all font-serif"
+                placeholder="Contraseña de Administrador"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
               <button 
                 type="button"
                 onClick={() => setShowPass(!showPass)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#001A33]"
               >
-                {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            <button className="w-full bg-black text-white py-4 rounded-2xl font-black tracking-widest hover:bg-zinc-800 transition-all active:scale-95">
-              ENTRAR AL PANEL
+            <button className="w-full bg-[#001A33] text-white py-5 text-[10px] font-black tracking-[0.2em] uppercase hover:bg-[#002a52] transition-all shadow-lg active:scale-95">
+              AUTENTICAR SESIÓN
             </button>
           </form>
         </motion.div>
@@ -112,109 +109,114 @@ export default function AdminPanel() {
     )
   }
 
-  // PANEL ADMINISTRADOR (Si la contraseña es correcta)
+  // VISTA DEL PANEL (ADMIN)
   return (
-    <div className="min-h-screen bg-gray-50/50 py-12 px-4">
+    <div className="min-h-screen bg-[#F8FAFC] py-16 px-4">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-2xl mx-auto bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-gray-100"
+        className="max-w-3xl mx-auto bg-white shadow-[0_10px_40px_rgba(0,26,51,0.05)] overflow-hidden"
       >
-        <div className="bg-black p-10 text-center">
-          <h1 className="text-3xl font-black italic text-white tracking-tighter uppercase">
-            Panel <span className="text-rose-500">Administrador</span>
+        {/* Header del Panel */}
+        <div className="bg-[#001A33] p-12 text-center relative">
+          <button 
+            onClick={() => setAuthorized(false)}
+            className="absolute top-6 right-6 text-white/50 hover:text-[#D4AF37] transition-colors"
+            title="Cerrar Sesión"
+          >
+            <LogOut size={20} />
+          </button>
+          <h1 className="text-4xl font-serif italic text-white mb-2">
+            Gestión de <span className="text-[#D4AF37]">Inventario</span>
           </h1>
-          <div className="flex justify-center gap-4 mt-3">
-             <span className="text-gray-500 text-[10px] tracking-widest font-bold border border-zinc-800 px-3 py-1 rounded-full uppercase">
-                Gestión de Inventario
-             </span>
-          </div>
+          <p className="text-[#D4AF37] text-[8px] tracking-[0.5em] font-black uppercase opacity-80">
+            Control de Calidad J y D
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 md:p-12 space-y-8">
+        <form onSubmit={handleSubmit} className="p-10 md:p-16 space-y-10">
           {mensaje && (
             <motion.div 
-              initial={{ scale: 0.9 }} animate={{ scale: 1 }}
-              className={`p-4 rounded-2xl flex items-center gap-3 text-sm font-bold ${mensaje.includes('Error') ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className={`p-5 text-[10px] font-black uppercase tracking-widest flex items-center gap-4 ${mensaje.includes('Error') ? 'bg-red-50 text-red-600' : 'bg-[#001A33] text-[#D4AF37]'}`}
             >
               <CheckCircle2 className="w-5 h-5" /> {mensaje}
             </motion.div>
           )}
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Nombre del Producto</label>
-            <div className="relative">
-              <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-5 h-5" />
-              <input 
-                required
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none transition-all text-black"
-                placeholder="Ej: Perfume Chanel N°5"
-                value={form.nombre}
-                onChange={(e) => setForm({...form, nombre: e.target.value})}
-              />
-            </div>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Columna Izquierda: Datos */}
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase text-[#001A33]/40 tracking-[0.2em]">Nombre de la Pieza</label>
+                <div className="relative border-b border-gray-100 focus-within:border-[#D4AF37] transition-colors pb-2">
+                  <Package className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
+                  <input 
+                    required
+                    className="w-full pl-8 pr-2 py-2 bg-transparent outline-none text-[#001A33] font-serif text-lg"
+                    placeholder="Ej: Lencería de Encaje Silk"
+                    value={form.nombre}
+                    onChange={(e) => setForm({...form, nombre: e.target.value})}
+                  />
+                </div>
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Precio Unitario ($)</label>
-              <div className="relative">
-                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-5 h-5" />
-                <input 
-                  required type="number" step="0.01"
-                  className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none transition-all text-black font-bold"
-                  placeholder="0.00"
-                  value={form.precio}
-                  onChange={(e) => setForm({...form, precio: e.target.value})}
-                />
+              <div className="grid grid-cols-1 gap-8">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase text-[#001A33]/40 tracking-[0.2em]">Precio Unitario ($)</label>
+                  <div className="relative border-b border-gray-100 focus-within:border-[#D4AF37] transition-colors pb-2">
+                    <DollarSign className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
+                    <input 
+                      required type="number" step="0.01"
+                      className="w-full pl-8 pr-2 py-2 bg-transparent outline-none text-[#001A33] font-serif text-lg"
+                      placeholder="0.00"
+                      value={form.precio}
+                      onChange={(e) => setForm({...form, precio: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase text-[#001A33]/40 tracking-[0.2em]">Colección / Categoría</label>
+                  <div className="relative border-b border-gray-100 focus-within:border-[#D4AF37] transition-colors pb-2">
+                    <Tag className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
+                    <select 
+                      className="w-full pl-8 pr-2 py-2 bg-transparent outline-none text-[#001A33] font-bold text-xs uppercase tracking-widest appearance-none cursor-pointer"
+                      value={form.categoria}
+                      onChange={(e) => setForm({...form, categoria: e.target.value})}
+                    >
+                      <option value="lenceria">Lencería</option>
+                      <option value="maquillaje">Cosmética</option>
+                      <option value="perfumes">Perfumes</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Categoría</label>
-              <div className="relative">
-                <Tag className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-5 h-5" />
-                <select 
-                  className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none appearance-none text-black font-medium"
-                  value={form.categoria}
-                  onChange={(e) => setForm({...form, categoria: e.target.value})}
-                >
-                  <option value="Lencería">Lencería</option>
-                  <option value="Maquillaje">Maquillaje</option>
-                  <option value="Perfumes">Perfumes</option>
-                </select>
-              </div>
+            {/* Columna Derecha: Imagen */}
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase text-[#001A33]/40 tracking-[0.2em]">Fotografía del Producto</label>
+              <label className="flex flex-col items-center justify-center w-full h-full min-h-[250px] border border-dashed border-gray-200 bg-gray-50 cursor-pointer hover:bg-[#F8FAFC] hover:border-[#D4AF37] transition-all group">
+                <div className="flex flex-col items-center justify-center p-6 text-center">
+                  <Upload className="w-8 h-8 text-[#001A33] mb-4 group-hover:text-[#D4AF37] transition-colors" />
+                  <p className="text-[10px] font-black text-[#001A33] uppercase tracking-widest mb-2">
+                    {file ? file.name : "Subir Imagen"}
+                  </p>
+                  <p className="text-[9px] text-gray-400 font-medium">Formato cuadrado recomendado</p>
+                </div>
+                <input type="file" className="hidden" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              </label>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">Imagen del Producto</label>
-            <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-100 rounded-[2rem] cursor-pointer hover:bg-gray-50 hover:border-rose-200 transition-all">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
-                <Upload className="w-8 h-8 text-rose-500 mb-3" />
-                <p className="text-xs font-bold text-gray-500 tracking-tight">
-                  {file ? file.name : "Click para abrir galería"}
-                </p>
-                <p className="text-[10px] text-gray-300 mt-1 uppercase font-bold tracking-tighter">JPG, PNG o WEBP • Max 5MB</p>
-              </div>
-              <input type="file" className="hidden" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-            </label>
-          </div>
-
-          <div className="pt-4">
+          <div className="pt-10 border-t border-gray-100">
             <button 
               disabled={loading}
               type="submit"
-              className="w-full bg-black text-white py-5 rounded-2xl font-black tracking-widest hover:bg-zinc-800 transition-all active:scale-[0.98] disabled:opacity-50 shadow-xl shadow-gray-200"
+              className="w-full bg-[#001A33] text-[#D4AF37] py-6 text-[11px] font-black tracking-[0.3em] uppercase hover:bg-[#002a52] transition-all active:scale-[0.99] disabled:opacity-50 shadow-2xl"
             >
-              {loading ? 'SUBIENDO PRODUCTO...' : 'PUBLICAR EN LA TIENDA'}
-            </button>
-            <button 
-              type="button"
-              onClick={() => setAuthorized(false)}
-              className="w-full mt-4 text-[10px] font-black text-gray-300 hover:text-rose-500 transition-colors tracking-widest uppercase"
-            >
-              Cerrar Sesión de Admin
+              {loading ? 'PROCESANDO ALTA...' : 'REGISTRAR EN EL CATÁLOGO'}
             </button>
           </div>
         </form>
