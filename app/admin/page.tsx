@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Upload, Package, DollarSign, Tag, CheckCircle2, Lock, Eye, EyeOff, LogOut, Trash2, RefreshCw, Edit3, X, List } from 'lucide-react'
+import { Upload, Lock, Eye, EyeOff, LogOut, Trash2, RefreshCw, Edit3, X, LayoutGrid, PlusCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPanel() {
@@ -65,11 +65,8 @@ export default function AdminPanel() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    setMensaje('')
-
     try {
       let finalImageUrl = currentImageUrl
-
       if (file) {
         const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`
         const { error: upError } = await supabase.storage.from('productos').upload(fileName, file)
@@ -86,16 +83,13 @@ export default function AdminPanel() {
       }
 
       if (editingId) {
-        const { error } = await supabase.from('productos').update(datosProducto).eq('id', editingId)
-        if (error) throw error
+        await supabase.from('productos').update(datosProducto).eq('id', editingId)
         setMensaje('¡Actualizado!')
       } else {
         if (!file) throw new Error('Imagen requerida')
-        const { error } = await supabase.from('productos').insert([datosProducto])
-        if (error) throw error
+        await supabase.from('productos').insert([datosProducto])
         setMensaje('¡Publicado!')
       }
-
       cancelarEdicion()
       cargarInventario()
     } catch (error: any) {
@@ -109,17 +103,15 @@ export default function AdminPanel() {
   const eliminarProducto = async (id: string) => {
     if (!confirm("¿Eliminar definitivamente?")) return
     const { error } = await supabase.from('productos').delete().eq('id', id)
-    if (!error) {
-        setProductos(productos.filter(p => p.id !== id))
-    }
+    if (!error) setProductos(productos.filter(p => p.id !== id))
   }
 
   if (!authorized) {
     return (
-      <div className="min-h-screen bg-[#001A33] flex items-center justify-center px-6">
-        <div className="max-w-md w-full p-8 bg-white shadow-2xl text-center border-t-4 border-[#D4AF37]">
+      <div className="min-h-screen bg-[#001A33] flex items-center justify-center px-6 font-sans">
+        <div className="max-w-md w-full p-8 bg-white text-center border-t-4 border-[#D4AF37] shadow-2xl">
           <Lock className="text-[#D4AF37] w-10 h-10 mx-auto mb-4" />
-          <h1 className="text-xl font-serif text-[#001A33] mb-6">ADMIN</h1>
+          <h1 className="text-xl font-serif text-[#001A33] mb-6 tracking-widest uppercase">Admin Login</h1>
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="relative">
               <input 
@@ -141,61 +133,40 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      {/* BARRA DE NAVEGACIÓN CORREGIDA PARA MÓVIL */}
-      <div className="sticky top-0 z-50 bg-[#001A33] text-white shadow-lg w-full">
-        <div className="flex justify-around items-center h-16 px-2">
-          <button 
-            onClick={() => setActiveTab('subir')}
-            className={`flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'subir' ? 'text-[#D4AF37] border-b-2 border-[#D4AF37]' : 'text-white/40'}`}
-          >
-            <Upload size={14} />
-            <span className="hidden xs:inline">{editingId ? 'Editar' : 'Nuevo'}</span>
-          </button>
-
-          <button 
-            onClick={() => { setActiveTab('galeria'); cargarInventario(); }}
-            className={`flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'galeria' ? 'text-[#D4AF37] border-b-2 border-[#D4AF37]' : 'text-white/40'}`}
-          >
-            <List size={14} />
-            <span className="hidden xs:inline">Inventario</span>
-            <span className="bg-[#D4AF37] text-[#001A33] px-1.5 py-0.5 rounded-sm text-[8px]">{productos.length}</span>
-          </button>
-
-          <button onClick={() => setAuthorized(false)} className="p-2 text-white/40 hover:text-white transition-colors">
-            <LogOut size={18}/>
-          </button>
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 font-sans">
+      {/* HEADER SIMPLE */}
+      <header className="bg-[#001A33] text-white py-6 px-6 shadow-md">
+        <div className="max-w-2xl mx-auto flex justify-between items-center">
+          <h1 className="text-lg font-serif italic text-[#D4AF37]">Inversiones JyD <span className="text-white/50 text-xs not-italic font-sans ml-2">Panel</span></h1>
+          <button onClick={() => setAuthorized(false)} className="text-white/40 hover:text-red-400 transition-colors"><LogOut size={20}/></button>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <main className="max-w-2xl mx-auto px-4 mt-8">
         <AnimatePresence mode="wait">
           {activeTab === 'subir' ? (
-            <motion.form 
-              key="form" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-              onSubmit={handleSubmit} className="bg-white p-6 shadow-sm border border-gray-100 space-y-6"
-            >
-              <div className="flex justify-between items-center border-b pb-2">
-                <h2 className="text-xl font-serif text-[#001A33] italic">{editingId ? 'Editar Producto' : 'Nueva Pieza'}</h2>
-                {editingId && <button onClick={cancelarEdicion} className="text-red-500 text-[9px] font-black uppercase border border-red-500 px-2 py-1">Cancelar</button>}
+            <motion.div key="form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-white p-6 shadow-sm border border-gray-100 rounded-xl space-y-6">
+              <div className="flex justify-between items-center border-b pb-3">
+                <h2 className="text-xl font-serif text-[#001A33]">{editingId ? 'Editar Producto' : 'Nueva Pieza'}</h2>
+                {editingId && <button onClick={cancelarEdicion} className="text-red-500 text-[10px] font-bold uppercase flex items-center gap-1"><X size={12}/> Cancelar</button>}
               </div>
 
-              {mensaje && <div className="p-3 bg-[#001A33] text-[#D4AF37] text-[10px] font-black text-center uppercase tracking-widest">{mensaje}</div>}
+              {mensaje && <div className="p-3 bg-[#001A33] text-[#D4AF37] text-[10px] font-black text-center uppercase rounded-lg">{mensaje}</div>}
               
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div className="border-b border-gray-100 pb-1">
-                  <label className="text-[8px] font-black uppercase text-gray-400">Nombre</label>
-                  <input required className="w-full bg-transparent outline-none text-[#001A33] py-1" value={form.nombre} onChange={(e) => setForm({...form, nombre: e.target.value})} />
+                  <label className="text-[8px] font-black uppercase text-gray-400 tracking-widest">Nombre</label>
+                  <input required className="w-full bg-transparent outline-none text-[#001A33] py-2 font-medium" value={form.nombre} onChange={(e) => setForm({...form, nombre: e.target.value})} />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="border-b border-gray-100 pb-1">
-                    <label className="text-[8px] font-black uppercase text-gray-400">Precio</label>
-                    <input required type="number" step="0.01" className="w-full bg-transparent outline-none text-[#001A33] font-bold py-1" value={form.precio} onChange={(e) => setForm({...form, precio: e.target.value})} />
+                    <label className="text-[8px] font-black uppercase text-gray-400 tracking-widest">Precio ($)</label>
+                    <input required type="number" step="0.01" className="w-full bg-transparent outline-none text-[#001A33] font-bold py-2" value={form.precio} onChange={(e) => setForm({...form, precio: e.target.value})} />
                   </div>
                   <div className="border-b border-gray-100 pb-1">
-                    <label className="text-[8px] font-black uppercase text-gray-400">Categoría</label>
-                    <select className="w-full bg-transparent outline-none text-[#001A33] text-[9px] font-bold uppercase py-1" value={form.categoria} onChange={(e) => setForm({...form, categoria: e.target.value})}>
+                    <label className="text-[8px] font-black uppercase text-gray-400 tracking-widest">Categoría</label>
+                    <select className="w-full bg-transparent outline-none text-[#001A33] text-[10px] font-bold uppercase py-2" value={form.categoria} onChange={(e) => setForm({...form, categoria: e.target.value})}>
                       <option value="lenceria">Lencería</option>
                       <option value="maquillaje">Cosmética</option>
                       <option value="perfumes">Perfumes</option>
@@ -203,60 +174,78 @@ export default function AdminPanel() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[8px] font-black uppercase text-gray-400">Fotografía</label>
-                  <label className="border-2 border-dashed border-gray-100 aspect-square flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 overflow-hidden relative">
+                <div>
+                  <label className="text-[8px] font-black uppercase text-gray-400 tracking-widest block mb-2">Imagen del catálogo</label>
+                  <label className="border-2 border-dashed border-gray-100 aspect-video flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 overflow-hidden relative rounded-xl transition-all">
                     {file || currentImageUrl ? (
                       <img src={file ? URL.createObjectURL(file) : currentImageUrl} className="w-full h-full object-cover" />
                     ) : (
-                      <Upload className="text-[#D4AF37]" size={24} />
+                      <div className="text-center">
+                        <Upload className="text-[#D4AF37] mx-auto mb-2" size={28} />
+                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Tocar para subir</span>
+                      </div>
                     )}
                     <input type="file" className="hidden" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
                   </label>
                 </div>
               </div>
 
-              <button disabled={loading} className="w-full bg-[#001A33] text-[#D4AF37] py-5 font-black uppercase tracking-[0.2em] text-[10px] shadow-lg">
-                {loading ? 'Procesando...' : editingId ? 'Actualizar' : 'Publicar'}
+              <button disabled={loading} className="w-full bg-[#001A33] text-[#D4AF37] py-5 font-black uppercase tracking-[0.3em] text-[10px] rounded-xl shadow-xl active:scale-95 transition-transform disabled:opacity-50">
+                {loading ? 'Guardando...' : editingId ? 'Actualizar Producto' : 'Publicar en Tienda'}
               </button>
-            </motion.form>
+            </motion.div>
           ) : (
-            <motion.div key="list" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
-              <div className="flex justify-between items-center bg-white p-4 shadow-sm border-l-4 border-[#D4AF37]">
-                <h2 className="text-lg font-serif text-[#001A33] italic">Catálogo</h2>
-                <button onClick={cargarInventario} className="text-[#001A33] p-2 active:rotate-180 transition-transform"><RefreshCw size={18} /></button>
+            <motion.div key="list" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-4">
+              <div className="flex justify-between items-center bg-white p-5 shadow-sm rounded-xl border border-gray-100">
+                <h2 className="text-lg font-serif text-[#001A33]">Inventario <span className="text-[#D4AF37] italic">Digital</span></h2>
+                <button onClick={cargarInventario} className="text-[#001A33] p-2 active:rotate-180 transition-transform"><RefreshCw size={20} /></button>
               </div>
 
-              {loadingInv ? (
-                <div className="text-center py-20 animate-pulse text-[10px] font-black text-gray-300 uppercase tracking-widest">Sincronizando...</div>
-              ) : (
-                <div className="space-y-2">
-                  {productos.length === 0 ? (
-                    <div className="bg-white p-10 text-center text-gray-400 font-serif italic border border-dashed">No hay productos registrados</div>
-                  ) : (
-                    productos.map((prod) => (
-                      <div key={prod.id} className="flex items-center gap-3 p-2 bg-white border border-gray-100 shadow-sm rounded-sm">
-                        <img src={prod.imagen_url} className="w-12 h-12 object-cover bg-gray-50 rounded-sm" />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-serif text-[13px] text-[#001A33] truncate leading-tight">{prod.nombre}</h4>
-                          <div className="flex gap-2 items-center">
-                            <span className="text-[8px] font-black text-[#D4AF37] uppercase">{prod.categoria}</span>
-                            <span className="text-[9px] font-bold text-gray-400">${prod.precio}</span>
-                          </div>
-                        </div>
-                        <div className="flex gap-1">
-                          <button onClick={() => prepararEdicion(prod)} className="p-2.5 text-[#001A33] active:bg-[#001A33] active:text-white rounded-full transition-colors border border-gray-50"><Edit3 size={14} /></button>
-                          <button onClick={() => eliminarProducto(prod.id)} className="p-2.5 text-red-400 active:bg-red-500 active:text-white rounded-full transition-colors border border-gray-50"><Trash2 size={14} /></button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+              <div className="grid grid-cols-1 gap-3">
+                {productos.map((prod) => (
+                  <div key={prod.id} className="flex items-center gap-4 p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
+                    <img src={prod.imagen_url} className="w-16 h-16 object-cover rounded-lg bg-gray-50" />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm text-[#001A33] truncate">{prod.nombre}</h4>
+                      <p className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-wider">${prod.precio} • {prod.categoria}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => prepararEdicion(prod)} className="p-3 bg-[#F8FAFC] text-[#001A33] rounded-full active:bg-[#001A33] active:text-white transition-colors"><Edit3 size={16} /></button>
+                      <button onClick={() => eliminarProducto(prod.id)} className="p-3 bg-[#F8FAFC] text-red-500 rounded-full active:bg-red-500 active:text-white transition-colors"><Trash2 size={16} /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </main>
+
+      {/* BARRA DE NAVEGACIÓN INFERIOR (ESTILO MÓVIL) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-[100] bg-[#001A33] border-t border-[#D4AF37]/30 pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
+        <div className="flex justify-around items-center h-20 px-4">
+          <button 
+            onClick={() => setActiveTab('subir')}
+            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'subir' ? 'text-[#D4AF37] scale-110' : 'text-white/40'}`}
+          >
+            <PlusCircle size={ activeTab === 'subir' ? 28 : 24 } />
+            <span className="text-[8px] font-black uppercase tracking-tighter">{editingId ? 'Editar' : 'Añadir'}</span>
+          </button>
+
+          <button 
+            onClick={() => { setActiveTab('galeria'); cargarInventario(); }}
+            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'galeria' ? 'text-[#D4AF37] scale-110' : 'text-white/40'}`}
+          >
+            <div className="relative">
+                <LayoutGrid size={ activeTab === 'galeria' ? 28 : 24 } />
+                <span className="absolute -top-1 -right-1 bg-[#D4AF37] text-[#001A33] text-[7px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#001A33]">
+                    {productos.length}
+                </span>
+            </div>
+            <span className="text-[8px] font-black uppercase tracking-tighter">Inventario</span>
+          </button>
+        </div>
+      </nav>
     </div>
   )
 }
