@@ -3,11 +3,14 @@ import { useState } from 'react'
 import { Search, ShoppingCart, Menu, X, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation' // Importamos el router
 import { useCart } from '@/lib/store'
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('') // Estado para el texto de búsqueda
+  const router = useRouter()
   const { items } = useCart()
 
   const categorias = [
@@ -17,9 +20,18 @@ export default function Navbar() {
     { nombre: 'Perfumes', slug: '/categoria/perfumes' },
   ]
 
+  // Función para procesar la búsqueda al dar Enter
+  const handleSearch = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && searchTerm.trim()) {
+      setIsSearchOpen(false)
+      router.push(`/buscar?q=${encodeURIComponent(searchTerm.trim())}`)
+      setSearchTerm('')
+    }
+  }
+
   return (
     <>
-      <nav className="fixed top-0 w-full z-[100] bg-[#001A33] border-b border-[#D4AF37]/20 px-6 py-4">
+      <nav className="fixed top-0 w-full z-100 bg-[#001A33] border-b border-[#D4AF37]/20 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           
           {/* Logo */}
@@ -32,7 +44,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Menú Desktop (Se oculta en móvil) */}
+          {/* Menú Desktop */}
           <div className="hidden md:flex items-center gap-8">
             {categorias.map((cat) => (
               <Link 
@@ -47,7 +59,6 @@ export default function Navbar() {
 
           {/* Iconos de Acción */}
           <div className="flex items-center gap-5">
-            {/* Lupa - Funcional */}
             <button 
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               className="text-white hover:text-[#D4AF37] transition-colors"
@@ -55,7 +66,6 @@ export default function Navbar() {
               <Search size={20} />
             </button>
 
-            {/* Carrito */}
             <Link href="/carrito" className="text-white hover:text-[#D4AF37] transition-colors relative">
               <ShoppingCart size={20} />
               {items.length > 0 && (
@@ -65,7 +75,6 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* Botón Hamburguesa - Solo Móvil */}
             <button 
               onClick={() => setIsMenuOpen(true)}
               className="md:hidden text-white hover:text-[#D4AF37] transition-colors"
@@ -87,7 +96,10 @@ export default function Navbar() {
               <input 
                 autoFocus
                 type="text"
-                placeholder="¿Qué estás buscando hoy?"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={handleSearch}
+                placeholder="¿Qué estás buscando hoy? (Presiona Enter)"
                 className="w-full bg-white/5 border border-[#D4AF37]/20 rounded-none py-3 px-4 text-white text-sm font-serif outline-none focus:border-[#D4AF37]"
               />
             </motion.div>
@@ -99,22 +111,20 @@ export default function Navbar() {
       <AnimatePresence>
         {isMenuOpen && (
           <>
-            {/* Overlay oscuro detras del menu */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMenuOpen(false)}
-              className="fixed inset-0 bg-black/80 z-[1000] backdrop-blur-sm"
+              className="fixed inset-0 bg-black/80 z-1000 backdrop-blur-sm"
             />
 
-            {/* Contenedor del Menú */}
             <motion.div 
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-[80%] max-w-[300px] bg-[#001A33] z-[1001] p-8 border-l border-[#D4AF37]/20 shadow-2xl"
+              className="fixed top-0 right-0 h-full w-[80%] max-w-75 bg-[#001A33] z-1001 p-8 border-l border-[#D4AF37]/20 shadow-2xl"
             >
               <div className="flex justify-end mb-12">
                 <button 
