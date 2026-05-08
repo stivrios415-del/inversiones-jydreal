@@ -1,38 +1,43 @@
 "use client"
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import ProductCard from '@/components/ProductCard'
 import { motion } from 'framer-motion'
-
-// Intentamos forzar revalidación (útil en SSR)
-export const revalidate = 0;
 
 export default function Home() {
   const [productos, setProductos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetchProductos = async () => {
+  // Usamos useCallback para que la función sea estable
+  const fetchProductos = useCallback(async () => {
     setLoading(true)
-    // Añadimos un filtro de tiempo para "engañar" al caché y traer datos reales
-    const { data, error } = await supabase
-      .from('productos')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      setProductos(data)
+    try {
+      const { data, error } = await supabase
+        .from('productos')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setProductos(data)
+      }
+    } catch (err) {
+      console.error("Error al obtener productos:", err)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
-  }
+  }, [])
 
   useEffect(() => {
     fetchProductos()
     
-    // Opcional: Esto refresca la lista si el usuario cambia de pestaña y vuelve
+    // Refresca cuando el usuario vuelve a la pestaña
     const handleFocus = () => fetchProductos();
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [])
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    }
+  }, [fetchProductos])
 
   return (
     <main className="min-h-screen bg-[#F8FAFC]">
@@ -61,7 +66,7 @@ export default function Home() {
           </h2>
           <button 
             onClick={fetchProductos}
-            className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#D4AF37] transition-colors"
+            className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-[#D4AF37] transition-all active:scale-95"
           >
             {loading ? 'Sincronizando...' : 'Actualizar Lista'}
           </button>
@@ -70,7 +75,7 @@ export default function Home() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-[3/4] bg-gray-100 animate-pulse rounded-xl"></div>
+              <div key={i} className="aspect-[3/4] bg-gray-200 animate-pulse rounded-xl shadow-sm"></div>
             ))}
           </div>
         ) : (
@@ -82,7 +87,7 @@ export default function Home() {
         )}
 
         {!loading && productos.length === 0 && (
-          <div className="text-center py-32 bg-white border border-dashed border-gray-200 rounded-2xl">
+          <div className="text-center py-32 bg-white border border-dashed border-gray-200 rounded-3xl">
             <p className="text-gray-400 font-serif italic text-lg">
               Nuestra nueva colección llegará pronto...
             </p>
