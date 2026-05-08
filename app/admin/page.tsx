@@ -13,6 +13,8 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  
+  // CORRECCIÓN: Aseguramos que el estado inicial coincida con una opción del select
   const [form, setForm] = useState({ nombre: '', precio: '', categoria: 'lenceria' })
   const [file, setFile] = useState<File | null>(null)
   const [currentImageUrl, setCurrentImageUrl] = useState('')
@@ -48,7 +50,7 @@ export default function AdminPanel() {
     setForm({
       nombre: producto.nombre,
       precio: producto.precio.toString(),
-      categoria: producto.categoria
+      categoria: producto.categoria // Esto ahora cargará correctamente el valor
     })
     setCurrentImageUrl(producto.imagen_url)
     setActiveTab('subir')
@@ -65,8 +67,11 @@ export default function AdminPanel() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setMensaje('')
+
     try {
       let finalImageUrl = currentImageUrl
+
       if (file) {
         const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`
         const { error: upError } = await supabase.storage.from('productos').upload(fileName, file)
@@ -78,20 +83,29 @@ export default function AdminPanel() {
       const datosProducto = {
         nombre: form.nombre,
         precio: parseFloat(form.precio),
-        categoria: form.categoria.toLowerCase(),
+        categoria: form.categoria.toLowerCase(), // Normalizamos a minúsculas
         imagen_url: finalImageUrl
       }
 
       if (editingId) {
-        await supabase.from('productos').update(datosProducto).eq('id', editingId)
-        setMensaje('¡Actualizado!')
+        const { error } = await supabase
+          .from('productos')
+          .update(datosProducto)
+          .eq('id', editingId)
+        
+        if (error) throw error
+        setMensaje('¡Producto actualizado!')
       } else {
         if (!file) throw new Error('Imagen requerida')
-        await supabase.from('productos').insert([datosProducto])
-        setMensaje('¡Publicado!')
+        const { error } = await supabase.from('productos').insert([datosProducto])
+        if (error) throw error
+        setMensaje('¡Publicado con éxito!')
       }
+
+      // IMPORTANTE: Resetear estados y refrescar
       cancelarEdicion()
-      cargarInventario()
+      await cargarInventario() 
+      
     } catch (error: any) {
       setMensaje('Error: ' + error.message)
     } finally {
@@ -103,13 +117,15 @@ export default function AdminPanel() {
   const eliminarProducto = async (id: string) => {
     if (!confirm("¿Eliminar definitivamente?")) return
     const { error } = await supabase.from('productos').delete().eq('id', id)
-    if (!error) setProductos(productos.filter(p => p.id !== id))
+    if (!error) {
+        setProductos(productos.filter(p => p.id !== id))
+    }
   }
 
   if (!authorized) {
     return (
       <div className="min-h-screen bg-[#001A33] flex items-center justify-center px-6 font-sans">
-        <div className="max-w-md w-full p-8 bg-white text-center border-t-4 border-[#D4AF37] shadow-2xl">
+        <div className="max-w-md w-full p-8 bg-white text-center border-t-4 border-[#D4AF37] shadow-2xl rounded-xl">
           <Lock className="text-[#D4AF37] w-10 h-10 mx-auto mb-4" />
           <h1 className="text-xl font-serif text-[#001A33] mb-6 tracking-widest uppercase">Admin Login</h1>
           <form onSubmit={handleLogin} className="space-y-5">
@@ -125,7 +141,7 @@ export default function AdminPanel() {
                 {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            <button className="w-full bg-[#001A33] text-white py-4 text-xs font-black tracking-widest uppercase">Entrar</button>
+            <button className="w-full bg-[#001A33] text-white py-4 text-xs font-black tracking-widest uppercase rounded-lg active:scale-95 transition-transform">Entrar</button>
           </form>
         </div>
       </div>
@@ -134,10 +150,9 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 font-sans">
-      {/* HEADER SIMPLE */}
       <header className="bg-[#001A33] text-white py-6 px-6 shadow-md">
         <div className="max-w-2xl mx-auto flex justify-between items-center">
-          <h1 className="text-lg font-serif italic text-[#D4AF37]">Inversiones JyD <span className="text-white/50 text-xs not-italic font-sans ml-2">Panel</span></h1>
+          <h1 className="text-lg font-serif italic text-[#D4AF37]">Inversiones JyD <span className="text-white/50 text-xs not-italic font-sans ml-2 uppercase tracking-tighter">Panel</span></h1>
           <button onClick={() => setAuthorized(false)} className="text-white/40 hover:text-red-400 transition-colors"><LogOut size={20}/></button>
         </div>
       </header>
@@ -148,10 +163,10 @@ export default function AdminPanel() {
             <motion.div key="form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-white p-6 shadow-sm border border-gray-100 rounded-xl space-y-6">
               <div className="flex justify-between items-center border-b pb-3">
                 <h2 className="text-xl font-serif text-[#001A33]">{editingId ? 'Editar Producto' : 'Nueva Pieza'}</h2>
-                {editingId && <button onClick={cancelarEdicion} className="text-red-500 text-[10px] font-bold uppercase flex items-center gap-1"><X size={12}/> Cancelar</button>}
+                {editingId && <button onClick={cancelarEdicion} className="text-red-500 text-[10px] font-bold uppercase flex items-center gap-1 border border-red-100 px-2 py-1 rounded"><X size={12}/> Cancelar</button>}
               </div>
 
-              {mensaje && <div className="p-3 bg-[#001A33] text-[#D4AF37] text-[10px] font-black text-center uppercase rounded-lg">{mensaje}</div>}
+              {mensaje && <div className="p-3 bg-[#001A33] text-[#D4AF37] text-[10px] font-black text-center uppercase rounded-lg animate-pulse">{mensaje}</div>}
               
               <div className="space-y-5">
                 <div className="border-b border-gray-100 pb-1">
@@ -166,7 +181,12 @@ export default function AdminPanel() {
                   </div>
                   <div className="border-b border-gray-100 pb-1">
                     <label className="text-[8px] font-black uppercase text-gray-400 tracking-widest">Categoría</label>
-                    <select className="w-full bg-transparent outline-none text-[#001A33] text-[10px] font-bold uppercase py-2" value={form.categoria} onChange={(e) => setForm({...form, categoria: e.target.value})}>
+                    <select 
+                      className="w-full bg-transparent outline-none text-[#001A33] text-[10px] font-bold uppercase py-2" 
+                      value={form.categoria} 
+                      onChange={(e) => setForm({...form, categoria: e.target.value})}
+                    >
+                      {/* CORRECCIÓN: Los values deben ser consistentes */}
                       <option value="lenceria">Lencería</option>
                       <option value="maquillaje">Cosmética</option>
                       <option value="perfumes">Perfumes</option>
@@ -191,27 +211,29 @@ export default function AdminPanel() {
               </div>
 
               <button disabled={loading} className="w-full bg-[#001A33] text-[#D4AF37] py-5 font-black uppercase tracking-[0.3em] text-[10px] rounded-xl shadow-xl active:scale-95 transition-transform disabled:opacity-50">
-                {loading ? 'Guardando...' : editingId ? 'Actualizar Producto' : 'Publicar en Tienda'}
+                {loading ? 'Sincronizando...' : editingId ? 'Guardar Cambios' : 'Publicar en Tienda'}
               </button>
             </motion.div>
           ) : (
             <motion.div key="list" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-4">
               <div className="flex justify-between items-center bg-white p-5 shadow-sm rounded-xl border border-gray-100">
                 <h2 className="text-lg font-serif text-[#001A33]">Inventario <span className="text-[#D4AF37] italic">Digital</span></h2>
-                <button onClick={cargarInventario} className="text-[#001A33] p-2 active:rotate-180 transition-transform"><RefreshCw size={20} /></button>
+                <button onClick={cargarInventario} className={`text-[#001A33] p-2 transition-transform ${loadingInv ? 'animate-spin' : 'active:rotate-180'}`} disabled={loadingInv}>
+                    <RefreshCw size={20} />
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 gap-3 pb-10">
                 {productos.map((prod) => (
                   <div key={prod.id} className="flex items-center gap-4 p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
-                    <img src={prod.imagen_url} className="w-16 h-16 object-cover rounded-lg bg-gray-50" />
+                    <img src={prod.imagen_url} className="w-16 h-16 object-cover rounded-lg bg-gray-50 shadow-inner" />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm text-[#001A33] truncate">{prod.nombre}</h4>
-                      <p className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-wider">${prod.precio} • {prod.categoria}</p>
+                      <p className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-wider">${prod.precio.toFixed(2)} • {prod.categoria}</p>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => prepararEdicion(prod)} className="p-3 bg-[#F8FAFC] text-[#001A33] rounded-full active:bg-[#001A33] active:text-white transition-colors"><Edit3 size={16} /></button>
-                      <button onClick={() => eliminarProducto(prod.id)} className="p-3 bg-[#F8FAFC] text-red-500 rounded-full active:bg-red-500 active:text-white transition-colors"><Trash2 size={16} /></button>
+                      <button onClick={() => prepararEdicion(prod)} className="p-3 bg-[#F8FAFC] text-[#001A33] rounded-full active:bg-[#001A33] active:text-white transition-colors border border-gray-100"><Edit3 size={16} /></button>
+                      <button onClick={() => eliminarProducto(prod.id)} className="p-3 bg-red-50 text-red-500 rounded-full active:bg-red-500 active:text-white transition-colors border border-red-100"><Trash2 size={16} /></button>
                     </div>
                   </div>
                 ))}
@@ -221,12 +243,11 @@ export default function AdminPanel() {
         </AnimatePresence>
       </main>
 
-      {/* BARRA DE NAVEGACIÓN INFERIOR (ESTILO MÓVIL) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-[100] bg-[#001A33] border-t border-[#D4AF37]/30 pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.3)]">
+      <nav className="fixed bottom-0 left-0 right-0 z-[100] bg-[#001A33] border-t border-[#D4AF37]/30 pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.4)]">
         <div className="flex justify-around items-center h-20 px-4">
           <button 
             onClick={() => setActiveTab('subir')}
-            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'subir' ? 'text-[#D4AF37] scale-110' : 'text-white/40'}`}
+            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'subir' ? 'text-[#D4AF37] scale-110' : 'text-white/40 hover:text-white'}`}
           >
             <PlusCircle size={ activeTab === 'subir' ? 28 : 24 } />
             <span className="text-[8px] font-black uppercase tracking-tighter">{editingId ? 'Editar' : 'Añadir'}</span>
@@ -234,11 +255,11 @@ export default function AdminPanel() {
 
           <button 
             onClick={() => { setActiveTab('galeria'); cargarInventario(); }}
-            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'galeria' ? 'text-[#D4AF37] scale-110' : 'text-white/40'}`}
+            className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'galeria' ? 'text-[#D4AF37] scale-110' : 'text-white/40 hover:text-white'}`}
           >
             <div className="relative">
                 <LayoutGrid size={ activeTab === 'galeria' ? 28 : 24 } />
-                <span className="absolute -top-1 -right-1 bg-[#D4AF37] text-[#001A33] text-[7px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#001A33]">
+                <span className="absolute -top-2 -right-2 bg-[#D4AF37] text-[#001A33] text-[7px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#001A33] shadow-lg">
                     {productos.length}
                 </span>
             </div>
