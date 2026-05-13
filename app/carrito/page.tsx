@@ -12,10 +12,12 @@ export default function CarritoPage() {
     let mensaje = `*SOLICITUD DE PEDIDO - INVERSIONES J Y D*%0A`
     mensaje += `------------------------------%0A`
     items.forEach(item => {
-      mensaje += `• ${item.cantidad}x ${item.nombre.toUpperCase()} - $${(item.precio * item.cantidad).toFixed(2)}%0A`
+      // Cambio de $ a L en el mensaje de WhatsApp
+      mensaje += `• ${item.cantidad}x ${item.nombre.toUpperCase()} - L${(item.precio * item.cantidad).toFixed(2)}%0A`
     })
     mensaje += `------------------------------%0A`
-    mensaje += `*TOTAL: $${total.toFixed(2)}*%0A%0A`
+    // Cambio de $ a L en el total de WhatsApp
+    mensaje += `*TOTAL: L${total.toFixed(2)}*%0A%0A`
     mensaje += `Deseo coordinar el pago y envío.`
     window.open(`https://wa.me/${telefono}?text=${mensaje}`, '_blank')
   }
@@ -53,7 +55,8 @@ export default function CarritoPage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-serif text-lg text-[#001A33]">{item.nombre}</h3>
-                  <p className="text-[#D4AF37] font-bold text-sm mb-4">${item.precio.toFixed(2)}</p>
+                  {/* Cambio de $ a L en el precio del producto */}
+                  <p className="text-[#D4AF37] font-bold text-sm mb-4">L{item.precio.toFixed(2)}</p>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center border border-gray-100 rounded-full">
                       <button onClick={() => removeItem(item.id)} className="p-2 hover:text-[#D4AF37]"><Minus size={14} /></button>
@@ -75,7 +78,8 @@ export default function CarritoPage() {
               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37] mb-8 text-center">Resumen de Selección</h2>
               <div className="flex justify-between items-end mb-10">
                 <span className="text-white/50 text-[10px] font-black uppercase tracking-widest">Total Estimado</span>
-                <span className="text-3xl font-serif">${total.toFixed(2)}</span>
+                {/* Cambio de $ a L en el total mostrado */}
+                <span className="text-3xl font-serif">L{total.toFixed(2)}</span>
               </div>
               <button 
                 onClick={enviarPedidoWhatsApp}

@@ -190,7 +190,7 @@ export default function AdminPanel() {
                 
                 <div className="grid grid-cols-2 gap-6">
                   <div className="border-b border-gray-100 pb-1">
-                    <label className="text-[8px] font-black uppercase text-gray-400">Precio ($)</label>
+                    <label className="text-[8px] font-black uppercase text-gray-400">Precio (L)</label>
                     <input required type="number" step="0.01" className="w-full bg-transparent outline-none text-[#001A33] font-bold py-2" value={form.precio} onChange={(e) => setForm({...form, precio: e.target.value})} />
                   </div>
                   <div className="border-b border-gray-100 pb-1">
@@ -243,7 +243,7 @@ export default function AdminPanel() {
                     <img src={prod.imagen_url} className="w-16 h-16 object-cover rounded-xl bg-gray-50" alt={prod.nombre} />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-sm text-[#001A33] truncate">{prod.nombre}</h4>
-                      <p className="text-[10px] font-bold text-[#D4AF37] uppercase">${prod.precio.toFixed(2)} • {prod.categoria}</p>
+                     <p className="text-[10px] font-bold text-[#D4AF37] uppercase">L{prod.precio.toFixed(2)} • {prod.categoria}</p>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => prepararEdicion(prod)} className="p-3 bg-gray-50 text-[#001A33] rounded-full active:bg-[#001A33] active:text-white transition-colors"><Edit3 size={16} /></button>

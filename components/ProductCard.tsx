@@ -56,9 +56,7 @@ export default function ProductCard({ producto }: { producto: Producto }) {
             <p className="text-[10px] text-gray-300 line-through tracking-widest italic">
               ${(producto.precio + 15).toFixed(2)}
             </p>
-            <p className="text-lg font-light text-[#001A33] tracking-tight italic font-serif">
-              ${producto.precio.toFixed(2)}
-            </p>
+           <p className="text-[#D4AF37] font-bold">L{producto.precio.toFixed(2)}</p>
           </div>
           
           {/* Línea decorativa minimalista */}

@@ -46,7 +46,7 @@ export default function CheckoutPage() {
                         `¿Me pueden confirmar los datos bancarios para el pago?`
         
         // REEMPLAZA EL NÚMERO AQUÍ (Formato internacional, ej: 50499999999)
-        const tuNumero = "50489542041" 
+        const tuNumero = "50489762100" 
         const whatsappUrl = `https://wa.me/${tuNumero}?text=${encodeURIComponent(mensaje)}`
         
         clearCart()
